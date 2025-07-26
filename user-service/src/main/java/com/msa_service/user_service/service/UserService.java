@@ -5,14 +5,20 @@ import com.msa_service.user_service.dto.UserRequestDto;
 import com.msa_service.user_service.dto.UserResponseDto;
 import com.msa_service.user_service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class UserService {
 
+  private final PasswordEncoder passwordEncoder;
   private final UserRepository userRepository;
 
   public UserResponseDto createUser(UserRequestDto requestDto) {
@@ -20,9 +26,12 @@ public class UserService {
       throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
     }
 
+    String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
+
     User saved = userRepository.save(User.builder()
             .name(requestDto.getName())
             .email(requestDto.getEmail())
+            .password(encodedPassword)
             .build());
 
     return UserResponseDto.builder()
@@ -42,5 +51,11 @@ public class UserService {
             .name(user.getName())
             .email(user.getEmail())
             .build();
+  }
+
+  public List<UserResponseDto> getAllUsers() {
+    return userRepository.findAll().stream()
+            .map(UserResponseDto::from)
+            .collect(Collectors.toList());
   }
 }
