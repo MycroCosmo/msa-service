@@ -1,11 +1,12 @@
 package com.msa_service.user_service.service;
 
 import com.msa_service.user_service.domain.User;
-import com.msa_service.user_service.dto.UserRequestDto;
-import com.msa_service.user_service.dto.UserResponseDto;
+import com.msa_service.user_service.dto.request.UserRequest;
+import com.msa_service.user_service.dto.request.UserUpdateDto;
+import com.msa_service.user_service.dto.response.UserResponse;
 import com.msa_service.user_service.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,41 +22,50 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
   private final UserRepository userRepository;
 
-  public UserResponseDto createUser(UserRequestDto requestDto) {
-    if (userRepository.existsByEmail(requestDto.getEmail())) {
+  public UserResponse createUser(UserRequest request) {
+    if (userRepository.existsByEmail(request.email())) {
       throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
     }
 
-    String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
+    String encodedPassword = passwordEncoder.encode(request.password());
 
     User saved = userRepository.save(User.builder()
-            .name(requestDto.getName())
-            .email(requestDto.getEmail())
+            .name(request.name())
+            .email(request.email())
             .password(encodedPassword)
+            .role(request.role())
             .build());
 
-    return UserResponseDto.builder()
-            .id(saved.getId())
-            .name(saved.getName())
-            .email(saved.getEmail())
-            .build();
+    return new UserResponse(saved.getId(), saved.getName(), saved.getEmail());
   }
 
   @Transactional(readOnly = true)
-  public UserResponseDto getUser(Long id) {
+  public UserResponse getUser(Long id) {
     User user = userRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("해당 유저가 존재하지 않습니다."));
 
-    return UserResponseDto.builder()
-            .id(user.getId())
-            .name(user.getName())
-            .email(user.getEmail())
-            .build();
+    return new UserResponse(user.getId(), user.getName(), user.getEmail());
   }
 
-  public List<UserResponseDto> getAllUsers() {
+  public List<UserResponse> getAllUsers() {
     return userRepository.findAll().stream()
-            .map(UserResponseDto::from)
+            .map(UserResponse::from)
             .collect(Collectors.toList());
+  }
+
+  public UserResponse updateUser(Long id, UserUpdateDto dto) {
+    User user = userRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+
+    // 변경 감지 (Dirty Checking)
+    if (dto.name() != null) {
+      user.updateName(dto.name());
+    }
+    if (dto.email() != null) {
+      user.updateEmail(dto.email());
+    }
+
+    // JPA는 @Transactional 내부에서 변경 감지에 의해 자동 update됨
+    return new UserResponse(user);
   }
 }

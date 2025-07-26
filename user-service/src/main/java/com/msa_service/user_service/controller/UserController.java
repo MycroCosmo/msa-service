@@ -1,9 +1,12 @@
 package com.msa_service.user_service.controller;
 
-import com.msa_service.user_service.dto.UserRequestDto;
-import com.msa_service.user_service.dto.UserResponseDto;
+import com.msa_service.user_service.dto.request.UserRequest;
+import com.msa_service.user_service.dto.request.UserUpdateDto;
+import com.msa_service.user_service.dto.response.UserResponse;
 import com.msa_service.user_service.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +25,7 @@ public class UserController {
    * @return 회원가입한 유저 정보
    */
   @PostMapping
-  public ResponseEntity<UserResponseDto> createUser(@RequestBody UserRequestDto requestDto) {
+  public ResponseEntity<UserResponse> createUser(@RequestBody UserRequest requestDto) {
     return ResponseEntity.ok(userService.createUser(requestDto));
   }
 
@@ -32,8 +35,8 @@ public class UserController {
    * @return 해당 유저
    */
   @GetMapping("/{id}")
-  public ResponseEntity<UserResponseDto> getUser(@PathVariable Long id) {
-    return ResponseEntity.ok(userService.getUser(id));
+  public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
+    return ResponseEntity.status(HttpStatus.CREATED).body(userService.getUser(id));
   }
 
   /**
@@ -41,7 +44,20 @@ public class UserController {
    * @return 전체 유저
    */
   @GetMapping
-  public ResponseEntity<List<UserResponseDto>> getAllUsers() {
+  public ResponseEntity<List<UserResponse>> getAllUsers() {
     return ResponseEntity.ok(userService.getAllUsers());
   }
+
+  /**
+   * 유저 정보 업데이트
+   * @param id
+   * @param request
+   * @return
+   */
+  @PutMapping("/{id}")
+  public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @RequestBody @Valid UserUpdateDto request) {
+    return ResponseEntity.ok(userService.updateUser(id,request));
+  }
+
+
 }

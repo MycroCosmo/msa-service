@@ -26,4 +26,16 @@ public class User {
   @JsonIgnore
   @Column(nullable = false,length = 60)
   private String password;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private UserRole role;
+
+  public void updateName(String name) {
+    this.name = name;
+  }
+
+  public void updateEmail(String email) {
+    this.email = email;
+  }
 }
